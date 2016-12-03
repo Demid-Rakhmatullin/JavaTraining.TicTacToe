@@ -1,0 +1,224 @@
+<html>
+<head>
+<title>Chat WebSocket</title>
+<script src="/js/sockjs-0.3.4.js"></script>
+<script src="/js/stomp.js"></script>
+<style>
+body {
+	margin: 0;
+	background-color: #000;
+}
+
+.sign-in {
+	color: FFFFFF;
+	text-align: center;
+	font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", STHeiti,
+		"Microsoft Yahei", "WenQuanYi Micro Hei", Arial, Verdana, sans-serif;
+}
+.chat-table{
+	color: #fff;
+}
+
+
+.home-name-input {
+	width: 169px;
+	height: 23px;
+	padding: 2px 10px;
+	margin-left: 4px;
+	font-size: 14px;
+	color: #000;
+	font-weight: 400;
+	background: #fff;
+	border-radius: 20px;
+	border: 0;
+	outline: 0;
+}
+
+.home-submit-input {
+	width: 193px;
+	background: #666;
+	border-radius: 12px;
+	line-height: 1.4;
+	font-size: 14px;
+	border: 2px solid #fff;
+	color: #fff;
+	text-transform: uppercase;
+	required;
+}
+
+.chat {
+	margin: -15 0 0 0;
+	float: left;
+	width: 100%;
+	height: 210px;
+	text-align: center;
+	background-color: #333333;
+	color: #fff;
+}
+
+textarea.form-control {
+	height: auto;
+}
+
+.form-control, .form-control:focus {
+	box-shadow: none;
+}
+
+.form-control {
+	margin: 5px auto 0;
+	width: 450px;
+	height: 65px;
+	padding: 6px 12px;
+	background-color: #333;
+	border: 1px solid #999;
+	border-radius: 6px;
+	transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+	resize: none;
+}
+
+.form-messages-control {
+	margin: 20px auto 0;
+	width: 30%;
+	height: 500px;
+	padding: 6px 12px;
+	background-color: #333;
+	border: 1px solid #999;
+	border-radius: 6px;
+	transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+	resize: none;
+	color: #fff
+}
+
+.form-control, output {
+	font-size: 14px;
+	line-height: 1.42857143;
+	color: #fff;
+	display: block;
+}
+
+.form-submit-btn {
+	width: 100px;
+	background: #666;
+	border-radius: 12px;
+	line-height: 1.4;
+	font-size: 14px;
+	border: 2px solid #999;
+	color: #fff;
+	text-transform: uppercase;
+}
+</style>
+<script type="text/javascript">
+	var stompClient = null;
+		
+	function setConnected(connected) {
+		document.getElementById('connect').disabled = connected;
+		document.getElementById('disconnect').disabled = !connected;
+		document.getElementById('chat').style.display = connected ? '' : 'none';
+		document.getElementById('singin').style.display = connected ? 'none'
+				: '';
+		document.getElementById('response').innerHTML = '';
+		document.getElementById('name').innerHTML = document
+				.getElementById('from').value;
+	}
+
+	function connect() {
+		if(checkValue('from') == true) {
+			var socket = new SockJS('/chat');
+			stompClient = Stomp.over(socket);
+			stompClient.connect({}, function(frame) {
+				setConnected(true);
+				console.log('Connected: ' + frame);
+				stompClient.subscribe('/topic/messages', function(messageOutput) {
+					showMessageOutput(JSON.parse(messageOutput.body));
+				});
+			});
+		}
+	}
+
+	function disconnect() {
+		if (stompClient != null) {
+			stompClient.disconnect();
+		}
+		setConnected(false);
+		console.log("Disconnected");
+		document.getElementById('from').value='';
+	}
+
+	function sendMessage() {
+		if (document.getElementById('text').value != '') {
+			var from = document.getElementById('from').value;
+			var text = document.getElementById('text').value;
+			stompClient.send("/app/chat", {}, JSON.stringify({
+				'from' : from,
+				'text' : text
+			}));
+			document.getElementById('text').value='';
+		}	
+	}
+
+	function showMessageOutput(messageOutput) {
+		var response = document.getElementById('response');
+		var p = document.createElement('p');
+		p.style.wordWrap = 'break-word';
+		p.appendChild(document.createTextNode(messageOutput.from + ": "
+				+ messageOutput.text + " (" + messageOutput.time + ")"));
+		response.appendChild(p);
+	}
+		
+	function checkValue(id){
+        var input = document.getElementById(id).value;
+        if (input ==""){
+        	alert ( "Пожалуйста заполните поле 'USERNAME'." );
+            return false;
+        }
+        return true;
+    }
+</script>
+</head>
+<body onload="disconnect()">
+	<div id="singin" class="sign-in">
+		<div>
+			<img src="Dollars.png" "width="600" height="600" />
+		</div>
+		<label for="username">USERNAME: </label> 
+		<input type="text" id="from" class="home-name-input" size="40" maxlength="40" />
+		<div>
+			<p>
+				<button id="connect" onclick="connect();"
+					class="submit-input home-submit-input">ENTER</button>
+		</div>
+	</div>
+
+	<div id="chat" class="chat">
+		<table align="center"><p>
+    	<tr>
+    	   	<td width="225" height="50" align="right"><p id='name' style="color:#fff"></p></td>
+        	<td width="225" height="50" align="center">
+        		<button id="disconnect" disabled="disabled" onclick="disconnect();"	class="form-submit-btn">Disconnect</button>
+        </td>
+    	</tr>
+    	
+    	<tr>
+        	<td colspan="2">
+        		<input type="text" id="text" class="form-control" tabindex="1" maxlength="140" />
+        	</td>
+    	</tr>
+    	
+    	<tr><td><div></div></td></tr>
+    	<tr>
+    	   	<td colspan="2" height="50" align="center">
+        		<button id="sendMessage" onclick="sendMessage();" class="form-submit-btn">Send</button><p>
+        	</td>
+    	</tr>
+    	
+    	<tr>
+        	<td colspan="2">
+        		<p id="response" style="color:#fff"></p>
+        	</td>
+    	</tr>
+		</table>
+	</div>
+
+
+</body>
+</html>
