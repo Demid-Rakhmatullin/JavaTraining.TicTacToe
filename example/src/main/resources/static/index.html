@@ -1,12 +1,15 @@
-<html>
+<html lang="ru">
 <head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Chat WebSocket</title>
 <script src="/js/sockjs-0.3.4.js"></script>
 <script src="/js/stomp.js"></script>
-<style>
+<style type="text/css">
 body {
 	margin: 0;
 	background-color: #000;
+	font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", STHeiti,
+		"Microsoft Yahei", "WenQuanYi Micro Hei", Arial, Verdana, sans-serif;
 }
 
 .sign-in {
@@ -15,10 +18,10 @@ body {
 	font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", STHeiti,
 		"Microsoft Yahei", "WenQuanYi Micro Hei", Arial, Verdana, sans-serif;
 }
-.chat-table{
+
+.chat-table {
 	color: #fff;
 }
-
 
 .home-name-input {
 	width: 169px;
@@ -50,7 +53,7 @@ body {
 	margin: -15 0 0 0;
 	float: left;
 	width: 100%;
-	height: 210px;
+	height: 160px;
 	text-align: center;
 	background-color: #333333;
 	color: #fff;
@@ -74,6 +77,10 @@ textarea.form-control {
 	border-radius: 6px;
 	transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
 	resize: none;
+	overflow: auto;
+	-moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
 }
 
 .form-messages-control {
@@ -105,43 +112,91 @@ textarea.form-control {
 	border: 2px solid #999;
 	color: #fff;
 	text-transform: uppercase;
+	text-align: center;
+}
+
+.triangle-isosceles.left {
+	text-align: left;
+    margin-left: 50px;
+    background: #f3c200;
+}
+.triangle-isosceles {
+    position: relative;
+    padding: 5px;
+    color: #000;
+    background: #f3c200;
+   -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    border: 3px solid #fff;
+}
+.triangle-isosceles.left::after {
+    top: 16px;
+    left: -50px;
+    bottom: auto;
+    border-width: 10px 50px 10px 0;
+    border-color: transparent #fff;
+    }
+.triangle-isosceles::after {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    left: 50px;
+    border-width: 15px 15px 0;
+    border-style: solid;
+    border-color: #f3961c transparent;
+    display: block;
+    width: 0;
+}
+table{
+	margin: 35px auto;
+	text-align: center;
+}
+td{
+	-moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
 }
 </style>
 <script type="text/javascript">
 	var stompClient = null;
-		
+
 	function setConnected(connected) {
 		document.getElementById('connect').disabled = connected;
 		document.getElementById('disconnect').disabled = !connected;
 		document.getElementById('chat').style.display = connected ? '' : 'none';
-		document.getElementById('singin').style.display = connected ? 'none'
-				: '';
-		document.getElementById('response').innerHTML = '';
+		document.getElementById('singin').style.display = connected ? 'none': '';
+		document.getElementById('user').innerHTML = '';
+		document.getElementById('mes').innerHTML = '';
+		document.getElementById('time').innerHTML = '';
 		document.getElementById('name').innerHTML = document
 				.getElementById('from').value;
+		setOnline();
 	}
 
 	function connect() {
-		if(checkValue('from') == true) {
+		if (checkValue('from') == true) {
 			var socket = new SockJS('/chat');
 			stompClient = Stomp.over(socket);
 			stompClient.connect({}, function(frame) {
 				setConnected(true);
 				console.log('Connected: ' + frame);
-				stompClient.subscribe('/topic/messages', function(messageOutput) {
-					showMessageOutput(JSON.parse(messageOutput.body));
-				});
+				stompClient.subscribe('/topic/messages',
+						function(messageOutput) {
+							showMessageOutput(JSON.parse(messageOutput.body));
+						});
 			});
 		}
 	}
 
 	function disconnect() {
 		if (stompClient != null) {
+			removeOnline();
 			stompClient.disconnect();
 		}
 		setConnected(false);
 		console.log("Disconnected");
-		document.getElementById('from').value='';
+		document.getElementById('from').value = '';
 	}
 
 	function sendMessage() {
@@ -152,27 +207,57 @@ textarea.form-control {
 				'from' : from,
 				'text' : text
 			}));
-			document.getElementById('text').value='';
-		}	
+			document.getElementById('text').value = '';
+		}
 	}
 
 	function showMessageOutput(messageOutput) {
-		var response = document.getElementById('response');
-		var p = document.createElement('p');
-		p.style.wordWrap = 'break-word';
-		p.appendChild(document.createTextNode(messageOutput.from + ": "
-				+ messageOutput.text + " (" + messageOutput.time + ")"));
-		response.appendChild(p);
+		var user = document.getElementById('user');
+		var mes = document.getElementById('mes');
+		var time = document.getElementById('time');
+				
+		var u = document.createElement('p');
+		var m = document.createElement('p');
+		var t = document.createElement('p');
+				
+		u.style.wordWrap = 'break-word';
+		m.style.wordWrap = 'break-word';
+		t.style.wordWrap = 'break-word';
+				
+		u.appendChild(document.createTextNode(messageOutput.from));
+		user.appendChild(u);
+		m.appendChild(document.createTextNode(messageOutput.text));
+		mes.appendChild(m);
+		t.appendChild(document.createTextNode(messageOutput.time));
+		time.appendChild(t);
 	}
-		
-	function checkValue(id){
-        var input = document.getElementById(id).value;
-        if (input ==""){
-        	alert ( "Ïîæàëóéñòà çàïîëíèòå ïîëå 'USERNAME'." );
-            return false;
-        }
-        return true;
-    }
+
+	function checkValue(id) {
+		var input = document.getElementById(id).value;
+		if (input == "") {
+			alert("ÐŸÐ¾Ð¶Ð°Ð»ÑƒÐ¹ÑÑ‚Ð° Ð·Ð°Ð¿Ð¾Ð»Ð½Ð¸Ñ‚Ðµ Ð¿Ð¾Ð»Ðµ 'USERNAME'.");
+			return false;
+		}
+		return true;
+	}
+
+	function setOnline() {
+		var from = ">>" + document.getElementById('from').value;
+		var text = " connected to chat";
+		stompClient.send("/app/chat", {}, JSON.stringify({
+			'from' : from,
+			'text' : text
+		}));
+	}
+
+	function removeOnline() {
+		var from = ">>" + document.getElementById('from').value;
+		var text = " disconnected from chat";
+		stompClient.send("/app/chat", {}, JSON.stringify({
+			'from' : from,
+			'text' : text
+		}));
+	}
 </script>
 </head>
 <body onload="disconnect()">
@@ -180,8 +265,8 @@ textarea.form-control {
 		<div>
 			<img src="Dollars.png" "width="600" height="600" />
 		</div>
-		<label for="username">USERNAME: </label> 
-		<input type="text" id="from" class="home-name-input" size="40" maxlength="40" />
+		<label for="username">USERNAME: </label> <input type="text" id="from"
+			class="home-name-input" size="40" maxlength="40" />
 		<div>
 			<p>
 				<button id="connect" onclick="connect();"
@@ -190,33 +275,27 @@ textarea.form-control {
 	</div>
 
 	<div id="chat" class="chat">
-		<table align="center"><p>
-    	<tr>
-    	   	<td width="225" height="50" align="right"><p id='name' style="color:#fff"></p></td>
-        	<td width="225" height="50" align="center">
-        		<button id="disconnect" disabled="disabled" onclick="disconnect();"	class="form-submit-btn">Disconnect</button>
-        </td>
-    	</tr>
-    	
-    	<tr>
-        	<td colspan="2">
-        		<input type="text" id="text" class="form-control" tabindex="1" maxlength="140" />
-        	</td>
-    	</tr>
-    	
-    	<tr><td><div></div></td></tr>
-    	<tr>
-    	   	<td colspan="2" height="50" align="center">
-        		<button id="sendMessage" onclick="sendMessage();" class="form-submit-btn">Send</button><p>
-        	</td>
-    	</tr>
-    	
-    	<tr>
-        	<td colspan="2">
-        		<p id="response" style="color:#fff"></p>
-        	</td>
-    	</tr>
+		<p>
+		<table>
+			<tr>
+				<td colspan="3">
+					<p><input type="text" id="text" class="form-control" tabindex="1" maxlength="140" /></p>
+					<p align="center"><button id="sendMessage" onclick="sendMessage();" class="form-submit-btn">POST!</button></p>
+				</td>
+				<td width="50" height="50" align="left"><p id='name' style="color:#fff"></p></td>
+				<td width="100" height="50" align="left">
+        			<button id="disconnect" disabled="disabled" onclick="disconnect();"	class="form-submit-btn">Disconnect</button>
+      		    </td>
+			</tr>
+			
+			<tr style="color:#fff">
+				<td width="70" align="left"> <p id="user"/> </td>
+				<td width="480" align="left"> <p id="mes" /> </td>
+				<td width="20" align="right"> <p id="time"/> </td>
+				<td colspan="2" align="left"></td>
+			</tr>
 		</table>
+		
 	</div>
 
 
